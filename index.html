@@ -1,41 +1,124 @@
 <!DOCTYPE html>
-<html lang="bn">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>পার্টি ম্যানেজমেন্ট প্রো</title>
+    <title>Party Management Pro</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <style type="text/tailwindcss">
+        @custom-variant dark (&:where(.dark, .dark *));
+    </style>
     <!-- FontAwesome Icons -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <!-- Google Fonts Hind Siliguri -->
-    <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Google Fonts Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Google API Client Library -->
+    <script src="https://apis.google.com/js/api.js"></script>
+    <script src="https://accounts.google.com/gsi/client"></script>
     <style>
-        body { font-family: 'Hind Siliguri', sans-serif; -webkit-tap-highlight-color: transparent; }
+        body { font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
         ::-webkit-scrollbar { width: 4px; height: 4px; }
-        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        @media print {
+            body { background: white !important; color: black !important; }
+            .no-print { display: none !important; }
+        }
     </style>
 </head>
-<body class="bg-slate-100 text-slate-800 antialiased pb-20 sm:pb-8">
+<body class="bg-slate-100 dark:bg-slate-950 text-slate-800 dark:text-slate-100 antialiased pb-20 sm:pb-8 transition-colors duration-200">
 
-    <!-- মোবাইল ফ্রেন্ডলি স্টিকি হেডার -->
-    <header class="bg-indigo-600 text-white shadow-md sticky top-0 z-40">
+    <!-- Auth & Biometric Protection Modal -->
+    <div id="authModal" class="fixed inset-0 bg-slate-900/90 backdrop-blur-md z-50 flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-slate-900 rounded-3xl p-6 shadow-2xl w-full max-w-sm text-center space-y-4 border border-slate-200 dark:border-slate-800">
+            <div class="w-14 h-14 bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 rounded-2xl mx-auto flex items-center justify-center text-2xl">
+                <i class="fa-solid fa-lock"></i>
+            </div>
+            <div>
+                <h2 class="text-lg font-bold text-slate-800 dark:text-white">Security Verification</h2>
+                <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Enter password or use fingerprint</p>
+            </div>
+            <form onsubmit="verifyPassword(event)" class="space-y-3">
+                <input type="password" id="loginPassword" placeholder="Enter password" class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-sm text-center tracking-widest focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-800 dark:text-white">
+                <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 rounded-xl text-sm transition shadow-sm cursor-pointer">Login</button>
+            </form>
+            
+            <button type="button" onclick="loginWithBiometric()" class="w-full bg-emerald-50 dark:bg-emerald-950/50 hover:bg-emerald-100 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 font-semibold py-2.5 rounded-xl text-xs transition cursor-pointer flex items-center justify-center gap-2">
+                <i class="fa-solid fa-fingerprint text-base"></i> Login with Biometric
+            </button>
+
+            <div class="text-right">
+                <button type="button" onclick="openForgotModal()" class="text-xs text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer">Forgot Password?</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Forgot Password Modal -->
+    <div id="forgotModal" class="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-slate-900 rounded-3xl p-6 shadow-2xl w-full max-w-sm space-y-4 border border-slate-200 dark:border-slate-800">
+            <div class="flex justify-between items-center">
+                <h2 class="text-base font-bold text-slate-800 dark:text-white">Password Recovery</h2>
+                <button onclick="closeForgotModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <p class="text-xs text-slate-500 dark:text-slate-400">Secret Answer: What is your favorite teacher's name? (Default: admin)</p>
+            <form onsubmit="resetPassword(event)" class="space-y-3">
+                <input type="text" id="securityAnswer" required placeholder="Enter secret answer" class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-800 dark:text-white">
+                <input type="password" id="newPasswordInput" required placeholder="Enter new password" class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-800 dark:text-white">
+                <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2.5 rounded-xl text-sm cursor-pointer">Update Password</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settingsModal" class="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-slate-900 rounded-3xl p-6 shadow-2xl w-full max-w-sm space-y-4 border border-slate-200 dark:border-slate-800">
+            <div class="flex justify-between items-center">
+                <h2 class="text-base font-bold text-slate-800 dark:text-white">Settings & Security</h2>
+                <button onclick="closeSettingsModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <form onsubmit="changePassword(event)" class="space-y-3">
+                <input type="password" id="oldPass" required placeholder="Old Password" class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-800 dark:text-white">
+                <input type="password" id="newPass" required placeholder="New Password" class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-800 dark:text-white">
+                <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2.5 rounded-xl text-sm cursor-pointer">Change Password</button>
+            </form>
+            <div class="pt-2 border-t border-slate-100 dark:border-slate-800">
+                <button type="button" onclick="setupBiometric()" class="w-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 font-semibold py-2.5 rounded-xl text-xs transition cursor-pointer flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-fingerprint text-base"></i> Enable Biometric Login
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Header -->
+    <header class="bg-indigo-600 dark:bg-indigo-950 text-white shadow-md sticky top-0 z-40 no-print">
         <div class="max-w-4xl mx-auto px-4 py-3 flex justify-between items-center">
             <div class="flex items-center space-x-2.5">
                 <div class="bg-white/10 p-2 rounded-xl">
                     <i class="fa-solid fa-users-rectangle text-xl text-amber-300"></i>
                 </div>
                 <div>
-                    <h1 class="text-base sm:text-lg font-bold leading-tight">পার্টি ম্যানেজমেন্ট</h1>
-                    <p class="text-[10px] sm:text-xs text-indigo-200">মোবাইল ফ্রেন্ডলি ডিরেক্টরি</p>
+                    <h1 class="text-base sm:text-lg font-bold leading-tight">Party Management Pro</h1>
+                    <p class="text-[10px] sm:text-xs text-indigo-200">Smart Directory & Sync</p>
                 </div>
             </div>
             <div class="flex items-center gap-1.5">
-                <button onclick="exportData()" title="এক্সপোর্ট" class="bg-white/10 hover:bg-white/20 p-2 rounded-xl text-xs font-medium transition active:scale-95 cursor-pointer">
+                <button onclick="toggleDarkMode()" title="Toggle Dark Mode" class="bg-white/10 hover:bg-white/20 p-2 rounded-xl text-xs font-medium transition active:scale-95 cursor-pointer">
+                    <i id="darkModeIcon" class="fa-solid fa-moon"></i>
+                </button>
+                <button onclick="handleGoogleDriveAuth()" id="driveAuthBtn" title="Google Drive Sync" class="bg-white/10 hover:bg-white/20 px-2.5 py-2 rounded-xl text-xs font-medium transition active:scale-95 cursor-pointer flex items-center gap-1">
+                    <i class="fa-brands fa-google-drive text-amber-300"></i> <span id="driveStatusText" class="hidden sm:inline">Drive</span>
+                </button>
+                <button onclick="openSettingsModal()" title="Settings" class="bg-white/10 hover:bg-white/20 p-2 rounded-xl text-xs font-medium transition active:scale-95 cursor-pointer">
+                    <i class="fa-solid fa-gear"></i>
+                </button>
+                <button onclick="printReport()" title="Print / PDF" class="bg-white/10 hover:bg-white/20 p-2 rounded-xl text-xs font-medium transition active:scale-95 cursor-pointer">
+                    <i class="fa-solid fa-print"></i>
+                </button>
+                <button onclick="exportData()" title="Export JSON" class="bg-white/10 hover:bg-white/20 p-2 rounded-xl text-xs font-medium transition active:scale-95 cursor-pointer">
                     <i class="fa-solid fa-download"></i>
                 </button>
-                <label title="ইমপোর্ট" class="bg-white/10 hover:bg-white/20 p-2 rounded-xl text-xs font-medium transition active:scale-95 cursor-pointer inline-block">
+                <label title="Import JSON" class="bg-white/10 hover:bg-white/20 p-2 rounded-xl text-xs font-medium transition active:scale-95 cursor-pointer inline-block">
                     <i class="fa-solid fa-upload"></i>
                     <input type="file" id="importFile" class="hidden" accept=".json" onchange="importData(event)">
                 </label>
@@ -45,41 +128,48 @@
 
     <main class="max-w-4xl mx-auto px-3 sm:px-4 py-4 space-y-4">
         
-        <!-- ড্যাশবোর্ড ওভারভিউ কার্ড -->
-        <div class="grid grid-cols-2 gap-3">
-            <div class="bg-white p-3.5 rounded-2xl shadow-xs border border-slate-200/80 flex items-center justify-between">
+        <!-- Dashboard Overview -->
+        <div class="grid grid-cols-2 gap-3 no-print">
+            <div class="bg-white dark:bg-slate-900 p-3.5 rounded-2xl shadow-xs border border-slate-200/80 dark:border-slate-800 flex items-center justify-between">
                 <div>
-                    <p class="text-[11px] font-semibold text-slate-400 uppercase">মোট পার্টি</p>
-                    <h3 id="totalPartiesCount" class="text-xl font-bold text-slate-700">০</h3>
+                    <p class="text-[11px] font-semibold text-slate-400 uppercase">Total Parties</p>
+                    <h3 id="totalPartiesCount" class="text-xl font-bold text-slate-700 dark:text-slate-200">0</h3>
                 </div>
-                <div class="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center">
+                <div class="w-10 h-10 bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 rounded-xl flex items-center justify-center">
                     <i class="fa-solid fa-user-group text-sm"></i>
                 </div>
             </div>
-            <div class="bg-white p-3.5 rounded-2xl shadow-xs border border-slate-200/80 flex items-center justify-between">
+            <div onclick="openGalleryModal()" class="bg-white dark:bg-slate-900 p-3.5 rounded-2xl shadow-xs border border-slate-200/80 dark:border-slate-800 flex items-center justify-between cursor-pointer hover:border-indigo-300 transition">
                 <div>
-                    <p class="text-[11px] font-semibold text-slate-400 uppercase">ছবিযুক্ত</p>
-                    <h3 id="totalImagesCount" class="text-xl font-bold text-slate-700">০</h3>
+                    <p class="text-[11px] font-semibold text-slate-400 uppercase">Gallery Images</p>
+                    <h3 id="totalImagesCount" class="text-xl font-bold text-slate-700 dark:text-slate-200">0</h3>
                 </div>
-                <div class="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center">
-                    <i class="fa-solid fa-image text-sm"></i>
+                <div class="w-10 h-10 bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 rounded-xl flex items-center justify-center">
+                    <i class="fa-solid fa-images text-sm"></i>
                 </div>
             </div>
         </div>
 
-        <!-- নতুন পার্টি যোগ করার টগল বাটন -->
-        <button onclick="openFormModal()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-4 rounded-2xl shadow-sm transition active:scale-98 cursor-pointer flex items-center justify-center gap-2 text-sm">
-            <i class="fa-solid fa-user-plus text-amber-300 text-base"></i> নতুন পার্টি যোগ করুন
+        <!-- Category Filter Tags -->
+        <div class="flex items-center gap-1.5 overflow-x-auto pb-1 no-print" id="categoryFilterContainer">
+            <button onclick="filterCategory('All')" id="cat_All" class="category-btn bg-indigo-600 text-white px-3 py-1.5 rounded-xl text-xs font-semibold shrink-0 cursor-pointer shadow-xs">All</button>
+            <button onclick="filterCategory('Dealer')" id="cat_Dealer" class="category-btn bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-800 px-3 py-1.5 rounded-xl text-xs font-semibold shrink-0 cursor-pointer">Dealer</button>
+            <button onclick="filterCategory('Site Delivery')" id="cat_Site Delivery" class="category-btn bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-800 px-3 py-1.5 rounded-xl text-xs font-semibold shrink-0 cursor-pointer">Site Delivery</button>
+        </div>
+
+        <!-- Add New Party Button -->
+        <button onclick="openFormModal()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-4 rounded-2xl shadow-sm transition active:scale-98 cursor-pointer flex items-center justify-center gap-2 text-sm no-print">
+            <i class="fa-solid fa-user-plus text-amber-300 text-base"></i> Add New Party
         </button>
 
-        <!-- ফর্ম মডাল (লুকানো থাকবে, বাটনে ক্লিক করলে আসবে) -->
+        <!-- Form Modal -->
         <div id="formModal" class="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 hidden flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
-            <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-lg overflow-hidden my-auto transform transition-all">
-                <div class="bg-slate-50 px-4 py-3.5 border-b border-slate-100 flex justify-between items-center">
-                    <h2 id="formTitle" class="text-indigo-600 font-bold text-sm sm:text-base flex items-center gap-2">
-                        <i class="fa-solid fa-user-plus"></i> নতুন পার্টি যোগ করুন
+            <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 w-full max-w-lg overflow-hidden my-auto transform transition-all">
+                <div class="bg-slate-50 dark:bg-slate-800/50 px-4 py-3.5 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center">
+                    <h2 id="formTitle" class="text-indigo-600 dark:text-indigo-400 font-bold text-sm sm:text-base flex items-center gap-2">
+                        <i class="fa-solid fa-user-plus"></i> Add New Party
                     </h2>
-                    <button type="button" onclick="closeFormModal()" class="text-slate-400 hover:text-slate-600 w-8 h-8 rounded-full flex items-center justify-center transition cursor-pointer">
+                    <button type="button" onclick="closeFormModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 w-8 h-8 rounded-full flex items-center justify-center transition cursor-pointer">
                         <i class="fa-solid fa-xmark text-base"></i>
                     </button>
                 </div>
@@ -89,149 +179,361 @@
                     
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                         <div>
-                            <label class="block text-xs font-semibold text-slate-600 mb-1">নাম <span class="text-rose-500">*</span></label>
-                            <input type="text" id="name" required placeholder="পার্টির নাম লিখুন" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
+                            <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Name <span class="text-rose-500">*</span></label>
+                            <input type="text" id="name" required placeholder="Enter party name" class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-800 dark:text-white transition">
                         </div>
                         <div>
-                            <label class="block text-xs font-semibold text-slate-600 mb-1">ঠিকানা (Address)</label>
-                            <input type="text" id="address" placeholder="এلاকা বা ঠিকানা" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
+                            <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Category</label>
+                            <select id="category" class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-800 dark:text-white transition cursor-pointer">
+                                <option value="Dealer">Dealer</option>
+                                <option value="Site Delivery">Site Delivery</option>
+                            </select>
                         </div>
                     </div>
 
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                         <div>
-                            <label class="block text-xs font-semibold text-slate-600 mb-1">ফোন নম্বর</label>
-                            <input type="tel" id="phone" placeholder="০১৭xxxxxxxx" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
+                            <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Phone Number 1</label>
+                            <input type="tel" id="phone" placeholder="017xxxxxxxx" class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-800 dark:text-white transition">
                         </div>
                         <div>
-                            <label class="block text-xs font-semibold text-slate-600 mb-1">পার্টি কোড</label>
-                            <input type="text" id="code" placeholder="কোড নম্বর" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
+                            <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Phone Number 2</label>
+                            <input type="tel" id="phone2" placeholder="018xxxxxxxx" class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-800 dark:text-white transition">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Party Code</label>
+                            <input type="text" id="code" placeholder="Code number" class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-800 dark:text-white transition">
                         </div>
                     </div>
 
                     <div>
-                        <label class="block text-xs font-semibold text-slate-600 mb-1">গুগল ম্যাপ লিংক বা লোকেশন</label>
+                        <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Address</label>
+                        <input type="text" id="address" placeholder="Area or address" class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-800 dark:text-white transition">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Google Map Link / Location</label>
                         <div class="flex gap-2">
-                            <input type="text" id="mapLink" placeholder="ম্যাপের লিংক পেস্ট করুন" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
-                            <button type="button" onclick="pasteFromClipboard()" class="bg-slate-200 hover:bg-slate-300 px-3.5 py-2.5 rounded-xl text-slate-700 text-xs font-medium cursor-pointer transition shrink-0"><i class="fa-regular fa-clipboard mr-1"></i>পেস্ট</button>
+                            <input type="text" id="mapLink" placeholder="Paste map link" class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-800 dark:text-white transition">
+                            <button type="button" onclick="pasteFromClipboard()" class="bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 px-3.5 py-2.5 rounded-xl text-slate-700 dark:text-slate-200 text-xs font-medium cursor-pointer transition shrink-0"><i class="fa-regular fa-clipboard mr-1"></i>Paste</button>
                         </div>
                     </div>
 
                     <div>
-                        <label class="block text-xs font-semibold text-slate-600 mb-1">পার্টির ছবি</label>
-                        <input type="file" id="partyImage" accept="image/*" class="w-full border border-slate-200 rounded-xl px-3 py-2 bg-slate-50 text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 cursor-pointer">
+                        <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Quick Notes</label>
+                        <textarea id="notes" placeholder="Write notes or details..." rows="2" class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-800 dark:text-white transition"></textarea>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Party Image</label>
+                        <input type="file" id="partyImage" accept="image/*" class="w-full border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 bg-slate-50 dark:bg-slate-800 text-xs text-slate-500 dark:text-slate-400 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 cursor-pointer">
                     </div>
 
                     <div class="flex gap-2.5 pt-2">
-                        <button type="submit" id="saveBtn" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2.5 px-4 rounded-xl text-sm shadow-xs transition active:scale-98 cursor-pointer">সংরক্ষণ করুন</button>
-                        <button type="button" onclick="resetForm()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 font-medium py-2.5 px-4 rounded-xl text-sm transition active:scale-98 cursor-pointer">রিসেট</button>
+                        <button type="submit" id="saveBtn" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2.5 px-4 rounded-xl text-sm shadow-xs transition active:scale-98 cursor-pointer">Save</button>
+                        <button type="button" onclick="resetForm()" class="bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 font-medium py-2.5 px-4 rounded-xl text-sm transition active:scale-98 cursor-pointer">Reset</button>
                     </div>
                 </form>
             </div>
         </div>
 
-        <!-- সার্চ বক্স -->
-        <div class="sticky top-[58px] z-30 bg-slate-100/90 backdrop-blur-md py-1">
-            <div class="bg-white rounded-2xl shadow-xs border border-slate-200/80 flex items-center px-3.5 py-2">
+        <!-- Search & Sorting Bar -->
+        <div class="sticky top-[58px] z-30 bg-slate-100/90 dark:bg-slate-950/90 backdrop-blur-md py-1 no-print flex gap-2">
+            <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-xs border border-slate-200/80 dark:border-slate-800 flex items-center px-3.5 py-2 flex-1">
                 <i class="fa-solid fa-magnifying-glass text-slate-400 mr-2.5 text-sm"></i>
-                <input type="text" id="searchInput" onkeyup="renderParties()" placeholder="নাম, নম্বর বা কোড দিয়ে খুঁজুন..." class="w-full bg-transparent text-sm focus:outline-none text-slate-700 placeholder-slate-400">
+                <input type="text" id="searchInput" onkeyup="renderParties()" placeholder="Search by name, phone or code..." class="w-full bg-transparent text-sm focus:outline-none text-slate-700 dark:text-slate-200 placeholder-slate-400">
             </div>
+            <select id="sortSelect" onchange="renderParties()" class="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl px-3 text-xs font-semibold text-slate-600 dark:text-slate-300 focus:outline-none cursor-pointer shadow-xs">
+                <option value="newest">Newest First</option>
+                <option value="name-asc">Name (A-Z)</option>
+                <option value="name-desc">Name (Z-A)</option>
+            </select>
         </div>
 
-        <!-- পার্টি তালিকা কার্ড লেআউট -->
-        <div class="space-y-3" id="partyListContainer">
-            <!-- ডাইনামিক কার্ডগুলো এখানে রেন্ডার হবে -->
+        <!-- Print Header -->
+        <div class="hidden print:block text-center mb-6">
+            <h1 class="text-2xl font-bold text-slate-900">Party Management Pro - Report</h1>
+            <p class="text-xs text-slate-500">Date: <span id="printDate"></span></p>
         </div>
+
+        <!-- Party List Container -->
+        <div class="space-y-3" id="partyListContainer"></div>
 
     </main>
 
-    <!-- ফুলস্ক্রিন ইমেজ প্রিভিউ মডাল -->
-    <div id="imageModal" class="fixed inset-0 bg-black/80 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4" onclick="closeImageModal()">
-        <div class="relative max-w-md w-full bg-white rounded-2xl p-2 shadow-2xl overflow-hidden" onclick="event.stopPropagation()">
+    <!-- Party Detail / Action Modal (On Click Name/Icon) -->
+    <div id="partyDetailModal" class="fixed inset-0 bg-black/70 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4 no-print">
+        <div class="bg-white dark:bg-slate-900 rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl border border-slate-200 dark:border-slate-800 transform transition-all p-5 space-y-4">
+            <div class="flex justify-between items-center border-b border-slate-100 dark:border-slate-800 pb-3">
+                <h3 id="detailPartyName" class="font-bold text-slate-800 dark:text-white text-base">Party Details</h3>
+                <button onclick="closePartyDetailModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 w-8 h-8 rounded-full flex items-center justify-center transition cursor-pointer"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            
+            <div id="detailContentBody" class="space-y-3 text-xs text-slate-600 dark:text-slate-300">
+                <!-- Dynamic Content Here -->
+            </div>
+
+            <div class="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100 dark:border-slate-800" id="detailActionButtons">
+                <!-- Action Buttons: WhatsApp, Edit, Delete -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Gallery Modal -->
+    <div id="galleryModal" class="fixed inset-0 bg-black/80 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4 no-print">
+        <div class="bg-white dark:bg-slate-900 rounded-3xl w-full max-w-2xl max-h-[85vh] flex flex-col overflow-hidden shadow-2xl border border-slate-200 dark:border-slate-800">
+            <div class="px-5 py-4 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50 dark:bg-slate-800/50">
+                <h3 class="font-bold text-slate-800 dark:text-white text-base"><i class="fa-solid fa-images text-indigo-600 dark:text-indigo-400 mr-2"></i>Party Image Gallery</h3>
+                <button onclick="closeGalleryModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 w-8 h-8 rounded-full flex items-center justify-center transition cursor-pointer"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <div id="galleryGridContainer" class="p-4 grid grid-cols-2 sm:grid-cols-3 gap-3 overflow-y-auto"></div>
+        </div>
+    </div>
+
+    <!-- Image Preview Modal -->
+    <div id="imageModal" class="fixed inset-0 bg-black/90 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4 no-print" onclick="closeImageModal()">
+        <div class="relative max-w-md w-full bg-white dark:bg-slate-900 rounded-2xl p-2 shadow-2xl overflow-hidden border border-slate-200 dark:border-slate-800" onclick="event.stopPropagation()">
             <button onclick="closeImageModal()" class="absolute top-3 right-3 bg-black/60 text-white w-8 h-8 rounded-full flex items-center justify-center hover:bg-black transition cursor-pointer z-10"><i class="fa-solid fa-xmark"></i></button>
             <img id="modalImageElement" src="" class="w-full h-auto max-h-[75vh] object-contain rounded-xl">
         </div>
     </div>
 
-    <!-- টোস্ট নোটিফিকেশন -->
-    <div id="toast" class="fixed bottom-4 left-4 right-4 sm:left-auto sm:right-4 sm:max-w-xs z-50 transform translate-y-20 opacity-0 transition-all duration-300 bg-slate-900 text-white px-4 py-3 rounded-2xl shadow-xl text-xs sm:text-sm flex items-center gap-2.5">
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed bottom-4 left-4 right-4 sm:left-auto sm:right-4 sm:max-w-xs z-50 transform translate-y-20 opacity-0 transition-all duration-300 bg-slate-900 text-white px-4 py-3 rounded-2xl shadow-xl text-xs sm:text-sm flex items-center gap-2.5 no-print">
         <i id="toastIcon" class="fa-solid fa-circle-check text-emerald-400 text-base"></i>
-        <span id="toastMessage" class="flex-1">সফলভাবে সম্পন্ন হয়েছে!</span>
+        <span id="toastMessage" class="flex-1">Completed successfully!</span>
     </div>
 
-    <!-- স্ক্রিপ্ট লজিক -->
+    <!-- Script Logic -->
     <script>
         let parties = JSON.parse(localStorage.getItem('parties')) || [];
-
-        function openFormModal() {
-            document.getElementById('formModal').classList.remove('hidden');
+        let currentCategoryFilter = 'All';
+        
+        if (!localStorage.getItem('appPassword')) {
+            localStorage.setItem('appPassword', '1234');
         }
 
-        function closeFormModal() {
-            document.getElementById('formModal').classList.add('hidden');
-            resetForm();
+        if (localStorage.getItem('theme') === 'dark' || (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+            document.getElementById('darkModeIcon').className = "fa-solid fa-sun";
         }
+
+        function toggleDarkMode() {
+            if (document.documentElement.classList.contains('dark')) {
+                document.documentElement.classList.remove('dark');
+                localStorage.setItem('theme', 'light');
+                document.getElementById('darkModeIcon').className = "fa-solid fa-moon";
+            } else {
+                document.documentElement.classList.add('dark');
+                localStorage.setItem('theme', 'dark');
+                document.getElementById('darkModeIcon').className = "fa-solid fa-sun";
+            }
+        }
+
+        function verifyPassword(e) {
+            e.preventDefault();
+            const inputPass = document.getElementById('loginPassword').value;
+            const savedPass = localStorage.getItem('appPassword');
+            if (inputPass === savedPass) {
+                document.getElementById('authModal').classList.add('hidden');
+                showToast('Login successful!', 'success');
+            } else {
+                alert('Incorrect password! Please try again.');
+                document.getElementById('loginPassword').value = '';
+            }
+        }
+
+        async function setupBiometric() {
+            try {
+                if (!window.PublicKeyCredential) {
+                    alert('Biometric authentication is not supported on this device/browser!');
+                    return;
+                }
+                const challenge = new Uint8Array(32);
+                window.crypto.getRandomValues(challenge);
+                
+                const publicKey = {
+                    challenge: challenge,
+                    rp: { name: "Party Management Pro", id: window.location.hostname || "localhost" },
+                    user: {
+                        id: Uint8Array.from("PartyAdminUser", c => c.charCodeAt(0)),
+                        name: "admin@party.com",
+                        displayName: "Administrator"
+                    },
+                    pubKeyCredParams: [{ alg: -7, type: "public-key" }, { alg: -257, type: "public-key" }],
+                    timeout: 60000,
+                    authenticatorSelection: { authenticatorAttachment: "platform", userVerification: "required" },
+                    attestation: "direct"
+                };
+
+                const credential = await navigator.credentials.create({ publicKey });
+                if (credential) {
+                    localStorage.setItem('biometricEnabled', 'true');
+                    showToast('Biometric setup successfully!', 'success');
+                    closeSettingsModal();
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Biometric setup failed or was cancelled.');
+            }
+        }
+
+        async function loginWithBiometric() {
+            if (localStorage.getItem('biometricEnabled') !== 'true') {
+                alert('Please enable biometric from settings first!');
+                return;
+            }
+            try {
+                if (!window.PublicKeyCredential) {
+                    alert('Biometric authentication is not supported!');
+                    return;
+                }
+                const challenge = new Uint8Array(32);
+                window.crypto.getRandomValues(challenge);
+
+                const publicKey = {
+                    challenge: challenge,
+                    timeout: 60000,
+                    userVerification: "required"
+                };
+
+                const assertion = await navigator.credentials.get({ publicKey });
+                if (assertion) {
+                    document.getElementById('authModal').classList.add('hidden');
+                    showToast('Fingerprint verification successful!', 'success');
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Biometric verification failed!');
+            }
+        }
+
+        function openForgotModal() { document.getElementById('forgotModal').classList.remove('hidden'); }
+        function closeForgotModal() { document.getElementById('forgotModal').classList.add('hidden'); }
+
+        function resetPassword(e) {
+            e.preventDefault();
+            const ans = document.getElementById('securityAnswer').value.trim().toLowerCase();
+            const newPass = document.getElementById('newPasswordInput').value.trim();
+            if (ans === 'admin') {
+                localStorage.setItem('appPassword', newPass);
+                showToast('Password updated successfully!', 'success');
+                closeForgotModal();
+                document.getElementById('loginPassword').value = '';
+            } else {
+                alert('Incorrect secret answer!');
+            }
+        }
+
+        function openSettingsModal() { document.getElementById('settingsModal').classList.remove('hidden'); }
+        function closeSettingsModal() { document.getElementById('settingsModal').classList.add('hidden'); }
+
+        function changePassword(e) {
+            e.preventDefault();
+            const oldP = document.getElementById('oldPass').value;
+            const newP = document.getElementById('newPass').value;
+            const currentP = localStorage.getItem('appPassword');
+
+            if (oldP === currentP) {
+                localStorage.setItem('appPassword', newP);
+                showToast('Password changed successfully!', 'success');
+                closeSettingsModal();
+                document.getElementById('oldPass').value = '';
+                document.getElementById('newPass').value = '';
+            } else {
+                alert('Incorrect old password!');
+            }
+        }
+
+        function filterCategory(cat) {
+            currentCategoryFilter = cat;
+            document.querySelectorAll('.category-btn').forEach(btn => {
+                btn.className = "category-btn bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-800 px-3 py-1.5 rounded-xl text-xs font-semibold shrink-0 cursor-pointer";
+            });
+            const activeBtn = document.getElementById('cat_' + cat);
+            if(activeBtn) {
+                activeBtn.className = "category-btn bg-indigo-600 text-white px-3 py-1.5 rounded-xl text-xs font-semibold shrink-0 cursor-pointer shadow-xs";
+            }
+            renderParties();
+        }
+
+        function openFormModal() { document.getElementById('formModal').classList.remove('hidden'); }
+        function closeFormModal() { document.getElementById('formModal').classList.add('hidden'); resetForm(); }
 
         function saveParty(e) {
             e.preventDefault();
             const index = document.getElementById('partyIndex').value;
             const name = document.getElementById('name').value.trim();
+            const category = document.getElementById('category').value;
             const address = document.getElementById('address').value.trim();
             const phone = document.getElementById('phone').value.trim();
+            const phone2 = document.getElementById('phone2').value.trim();
             const code = document.getElementById('code').value.trim();
             const mapLink = document.getElementById('mapLink').value.trim();
+            const notes = document.getElementById('notes').value.trim();
             const imageFile = document.getElementById('partyImage').files[0];
 
             if (imageFile) {
                 const reader = new FileReader();
                 reader.onload = function(uploadEvent) {
-                    savePartyData(index, name, address, phone, code, mapLink, uploadEvent.target.result);
+                    savePartyData(index, name, category, address, phone, phone2, code, mapLink, notes, uploadEvent.target.result);
                 };
                 reader.readAsDataURL(imageFile);
             } else {
                 let existingImage = index !== "" ? (parties[index].image || "") : "";
-                savePartyData(index, name, address, phone, code, mapLink, existingImage);
+                savePartyData(index, name, category, address, phone, phone2, code, mapLink, notes, existingImage);
             }
         }
 
-        function savePartyData(index, name, address, phone, code, mapLink, image) {
-            const partyObj = { name, address, phone, code, mapLink, image };
+        function savePartyData(index, name, category, address, phone, phone2, code, mapLink, notes, image) {
+            const partyObj = { name, category, address, phone, phone2, code, mapLink, notes, image, createdAt: index === "" ? Date.now() : parties[index].createdAt };
 
             if (index === "") {
                 parties.unshift(partyObj);
-                showToast('নতুন পার্টি সফলভাবে যোগ করা হয়েছে!', 'success');
+                showToast('New party added successfully!', 'success');
             } else {
                 parties[index] = partyObj;
-                showToast('পার্টির তথ্য আপডেট করা হয়েছে!', 'success');
+                showToast('Party updated successfully!', 'success');
             }
 
             localStorage.setItem('parties', JSON.stringify(parties));
             closeFormModal();
             renderParties();
+            triggerAutoCloudBackup();
         }
 
         function renderParties() {
             const searchQuery = document.getElementById('searchInput').value.toLowerCase();
+            const sortMode = document.getElementById('sortSelect').value;
             const container = document.getElementById('partyListContainer');
             container.innerHTML = '';
 
             document.getElementById('totalPartiesCount').innerText = parties.length;
             const imgCount = parties.filter(p => p.image && p.image.trim() !== "").length;
             document.getElementById('totalImagesCount').innerText = imgCount;
+            document.getElementById('printDate').innerText = new Date().toLocaleDateString();
 
-            const filteredParties = parties.filter((p) => {
-                return (p.name && p.name.toLowerCase().includes(searchQuery)) ||
-                       (p.address && p.address.toLowerCase().includes(searchQuery)) ||
-                       (p.phone && p.phone.includes(searchQuery)) ||
-                       (p.code && p.code.toLowerCase().includes(searchQuery)) ||
-                       (p.mapLink && p.mapLink.toLowerCase().includes(searchQuery));
+            let filteredParties = parties.filter((p) => {
+                const matchesCategory = (currentCategoryFilter === 'All' || p.category === currentCategoryFilter);
+                const matchesSearch = (p.name && p.name.toLowerCase().includes(searchQuery)) ||
+                                      (p.address && p.address.toLowerCase().includes(searchQuery)) ||
+                                      (p.phone && p.phone.includes(searchQuery)) ||
+                                      (p.code && p.code.toLowerCase().includes(searchQuery)) ||
+                                      (p.notes && p.notes.toLowerCase().includes(searchQuery));
+                return matchesCategory && matchesSearch;
+            });
+
+            filteredParties.sort((a, b) => {
+                if (sortMode === 'name-asc') return a.name.localeCompare(b.name);
+                if (sortMode === 'name-desc') return b.name.localeCompare(a.name);
+                return (b.createdAt || 0) - (a.createdAt || 0);
             });
 
             if (filteredParties.length === 0) {
                 container.innerHTML = `
-                    <div class="bg-white rounded-2xl p-8 text-center text-slate-400 border border-slate-200/80 shadow-xs">
+                    <div class="bg-white dark:bg-slate-900 rounded-2xl p-8 text-center text-slate-400 dark:text-slate-500 border border-slate-200/80 dark:border-slate-800 shadow-xs">
                         <i class="fa-regular fa-folder-open text-3xl mb-2"></i>
-                        <p class="text-sm">কোনো পার্টির তথ্য পাওয়া যায়নি</p>
+                        <p class="text-sm">No party information found</p>
                     </div>`;
                 return;
             }
@@ -240,39 +542,62 @@
                 const originalIdx = parties.indexOf(p);
                 
                 let imageTag = p.image ? 
-                    `<img src="${p.image}" onclick="openImageModal('${p.image}')" class="w-14 h-14 object-cover rounded-xl border border-slate-200 cursor-pointer shadow-2xs shrink-0" title="ছবি বড় করুন">` : 
-                    `<div class="w-14 h-14 bg-slate-100 rounded-xl flex items-center justify-center text-slate-400 text-xs font-medium border border-slate-200 shrink-0">ছবি নেই</div>`;
+                    `<img src="${p.image}" onclick="openPartyDetail(${originalIdx})" class="w-14 h-14 object-cover rounded-xl border border-slate-200 dark:border-slate-700 cursor-pointer shadow-2xs shrink-0" title="View details">` : 
+                    `<div onclick="openPartyDetail(${originalIdx})" class="w-14 h-14 bg-slate-100 dark:bg-slate-800 rounded-xl flex items-center justify-center text-slate-400 text-xs font-medium border border-slate-200 dark:border-slate-700 shrink-0 cursor-pointer" title="View details">No Image</div>`;
                 
-                let mapHtml = p.mapLink ? 
-                    `<a href="${p.mapLink.startsWith('http') ? p.mapLink : 'https://www.google.com/maps/search/' + encodeURIComponent(p.mapLink)}" target="_blank" class="text-rose-600 hover:underline text-xs inline-flex items-center gap-1 bg-rose-50 px-2.5 py-1 rounded-lg border border-rose-100 font-medium"><i class="fa-solid fa-location-dot"></i>ম্যাপ</a>` : '';
+                let mapUrl = p.mapLink ? (p.mapLink.startsWith('http') ? p.mapLink : 'https://www.google.com/maps/search/' + encodeURIComponent(p.mapLink)) : '';
+                let routeUrl = p.address ? `https://www.google.com/maps/dir/?api=1&destination=` + encodeURIComponent(p.address) : mapUrl;
+
+                let mapHtml = mapUrl ? 
+                    `<a href="${mapUrl}" target="_blank" class="text-rose-600 dark:text-rose-400 hover:underline text-xs inline-flex items-center gap-1 bg-rose-50 dark:bg-rose-950/40 px-2.5 py-1 rounded-lg border border-rose-100 dark:border-rose-900 font-medium"><i class="fa-solid fa-location-dot"></i>Map</a>` : '';
+
+                let routeHtml = routeUrl ? 
+                    `<a href="${routeUrl}" target="_blank" class="text-amber-600 dark:text-amber-400 hover:underline text-xs inline-flex items-center gap-1 bg-amber-50 dark:bg-amber-950/40 px-2.5 py-1 rounded-lg border border-amber-100 dark:border-amber-900 font-medium"><i class="fa-solid fa-route"></i>Route</a>` : '';
 
                 let phoneHtml = p.phone ? 
-                    `<a href="tel:${p.phone}" class="text-indigo-600 hover:underline text-xs inline-flex items-center gap-1 bg-indigo-50 px-2.5 py-1 rounded-lg border border-indigo-100 font-medium"><i class="fa-solid fa-phone"></i>${p.phone}</a>` : '';
+                    `<a href="tel:${p.phone}" class="text-indigo-600 dark:text-indigo-400 hover:underline text-xs inline-flex items-center gap-1 bg-indigo-50 dark:bg-indigo-950/40 px-2.5 py-1 rounded-lg border border-indigo-100 dark:border-indigo-900 font-medium"><i class="fa-solid fa-phone"></i>${p.phone}</a>` : '';
+
+                let phone2Html = p.phone2 ? 
+                    `<a href="tel:${p.phone2}" class="text-indigo-600 dark:text-indigo-400 hover:underline text-xs inline-flex items-center gap-1 bg-indigo-50 dark:bg-indigo-950/40 px-2.5 py-1 rounded-lg border border-indigo-100 dark:border-indigo-900 font-medium"><i class="fa-solid fa-phone"></i>${p.phone2}</a>` : '';
+
+                let whatsAppHtml = p.phone ? 
+                    `<a href="https://wa.me/${p.phone.replace(/[^0-9+]/g, '')}" target="_blank" class="text-emerald-600 dark:text-emerald-400 hover:underline text-xs inline-flex items-center gap-1 bg-emerald-50 dark:bg-emerald-950/40 px-2.5 py-1 rounded-lg border border-emerald-100 dark:border-emerald-900 font-medium"><i class="fa-brands fa-whatsapp"></i>Chat 1</a>` : '';
+
+                let whatsApp2Html = p.phone2 ? 
+                    `<a href="https://wa.me/${p.phone2.replace(/[^0-9+]/g, '')}" target="_blank" class="text-emerald-600 dark:text-emerald-400 hover:underline text-xs inline-flex items-center gap-1 bg-emerald-50 dark:bg-emerald-950/40 px-2.5 py-1 rounded-lg border border-emerald-100 dark:border-emerald-900 font-medium"><i class="fa-brands fa-whatsapp"></i>Chat 2</a>` : '';
+
+                let notesHtml = p.notes ? 
+                    `<p class="text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30 p-2 rounded-xl border border-amber-100 dark:border-amber-900/50 mt-2"><i class="fa-regular fa-note-sticky mr-1"></i>${p.notes}</p>` : '';
 
                 let card = `
-                    <div class="bg-white rounded-2xl p-4 shadow-xs border border-slate-200/80 space-y-3 transition hover:shadow-md">
+                    <div class="bg-white dark:bg-slate-900 rounded-2xl p-4 shadow-xs border border-slate-200/80 dark:border-slate-800 space-y-3 transition hover:shadow-md">
                         <div class="flex items-start justify-between gap-3">
                             <div class="flex items-center gap-3">
                                 ${imageTag}
                                 <div>
-                                    <div class="flex items-center gap-2">
-                                        <h3 class="font-bold text-slate-800 text-sm sm:text-base">${p.name}</h3>
-                                        ${p.code ? `<span class="bg-slate-100 text-slate-600 text-[10px] font-bold px-2 py-0.5 rounded-md border border-slate-200">কোড: ${p.code}</span>` : ''}
+                                    <div class="flex flex-wrap items-center gap-1.5">
+                                        <h3 onclick="openPartyDetail(${originalIdx})" class="font-bold text-slate-800 dark:text-white text-sm sm:text-base cursor-pointer hover:text-indigo-600 transition">${p.name}</h3>
+                                        <span class="bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 text-[10px] font-bold px-2 py-0.5 rounded-md border border-indigo-100 dark:border-indigo-900">${p.category || 'Dealer'}</span>
+                                        ${p.code ? `<span class="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-[10px] font-bold px-2 py-0.5 rounded-md border border-slate-200 dark:border-slate-700">Code: ${p.code}</span>` : ''}
                                     </div>
-                                    <p class="text-xs text-slate-500 mt-0.5"><i class="fa-solid fa-location-dot text-slate-400 mr-1"></i>${p.address || 'ঠিকানা দেওয়া হয়নি'}</p>
+                                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5"><i class="fa-solid fa-location-dot text-slate-400 mr-1"></i>${p.address || 'No address provided'}</p>
                                 </div>
                             </div>
                         </div>
 
-                        <div class="flex flex-wrap items-center gap-2 pt-1 border-t border-slate-100">
+                        ${notesHtml}
+
+                        <div class="flex flex-wrap items-center gap-2 pt-1 border-t border-slate-100 dark:border-slate-800">
                             ${phoneHtml}
+                            ${phone2Html}
+                            ${whatsAppHtml}
+                            ${whatsApp2Html}
                             ${mapHtml}
+                            ${routeHtml}
                         </div>
 
-                        <div class="flex items-center justify-end gap-1.5 pt-2 border-t border-slate-100">
-                            <button onclick="shareParty(${originalIdx})" class="bg-emerald-50 text-emerald-600 hover:bg-emerald-600 hover:text-white px-3 py-1.5 rounded-xl text-xs font-medium transition cursor-pointer flex items-center gap-1"><i class="fa-solid fa-share-nodes"></i> শেয়ার</button>
-                            <button onclick="editParty(${originalIdx})" class="bg-indigo-50 text-indigo-600 hover:bg-indigo-600 hover:text-white px-3 py-1.5 rounded-xl text-xs font-medium transition cursor-pointer flex items-center gap-1"><i class="fa-solid fa-pen-to-square"></i> এডিট</button>
-                            <button onclick="deleteParty(${originalIdx})" class="bg-rose-50 text-rose-600 hover:bg-rose-600 hover:text-white px-3 py-1.5 rounded-xl text-xs font-medium transition cursor-pointer flex items-center gap-1"><i class="fa-solid fa-trash-can"></i> ডিলিট</button>
+                        <div class="flex items-center justify-end gap-1.5 pt-2 border-t border-slate-100 dark:border-slate-800 no-print">
+                            <button onclick="shareParty(${originalIdx})" class="bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-600 hover:text-white px-3 py-1.5 rounded-xl text-xs font-medium transition cursor-pointer flex items-center gap-1"><i class="fa-solid fa-share-nodes"></i> Share</button>
                         </div>
                     </div>
                 `;
@@ -280,64 +605,132 @@
             });
         }
 
+        // Open Party Detail Modal with WhatsApp, Edit & Delete buttons inside
+        function openPartyDetail(index) {
+            const p = parties[index];
+            document.getElementById('detailPartyName').innerText = p.name;
+            
+            let bodyHTML = `
+                <div class="space-y-2">
+                    <p><strong>Category:</strong> ${p.category || 'N/A'}</p>
+                    <p><strong>Code:</strong> ${p.code || 'N/A'}</p>
+                    <p><strong>Phone 1:</strong> ${p.phone || 'N/A'}</p>
+                    <p><strong>Phone 2:</strong> ${p.phone2 || 'N/A'}</p>
+                    <p><strong>Address:</strong> ${p.address || 'N/A'}</p>
+                    <p><strong>Notes:</strong> ${p.notes || 'N/A'}</p>
+                </div>
+            `;
+            document.getElementById('detailContentBody').innerHTML = bodyHTML;
+
+            let actionsHTML = '';
+            if (p.phone) {
+                let cleanPhone = p.phone.replace(/[^0-9+]/g, '');
+                actionsHTML += `<a href="https://wa.me/${cleanPhone}" target="_blank" class="bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2 px-3 rounded-xl text-xs text-center transition flex items-center justify-center gap-1.5 cursor-pointer"><i class="fa-brands fa-whatsapp text-sm"></i> WhatsApp</a>`;
+            } else {
+                actionsHTML += `<button disabled class="bg-slate-200 dark:bg-slate-800 text-slate-400 py-2 px-3 rounded-xl text-xs text-center cursor-not-allowed">No Phone</button>`;
+            }
+
+            if (p.phone2) {
+                let cleanPhone2 = p.phone2.replace(/[^0-9+]/g, '');
+                actionsHTML += `<a href="https://wa.me/${cleanPhone2}" target="_blank" class="bg-emerald-500 hover:bg-emerald-600 text-white font-medium py-2 px-3 rounded-xl text-xs text-center transition flex items-center justify-center gap-1.5 cursor-pointer"><i class="fa-brands fa-whatsapp text-sm"></i> WhatsApp 2</a>`;
+            }
+
+            actionsHTML += `<button onclick="closePartyDetailModal(); editParty(${index});" class="bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 px-3 rounded-xl text-xs text-center transition flex items-center justify-center gap-1.5 cursor-pointer"><i class="fa-solid fa-pen-to-square"></i> Edit</button>`;
+            actionsHTML += `<button onclick="closePartyDetailModal(); deleteParty(${index});" class="col-span-2 bg-rose-600 hover:bg-rose-700 text-white font-medium py-2 px-3 rounded-xl text-xs text-center transition flex items-center justify-center gap-1.5 cursor-pointer"><i class="fa-solid fa-trash-can"></i> Delete</button>`;
+
+            document.getElementById('detailActionButtons').innerHTML = actionsHTML;
+            document.getElementById('partyDetailModal').classList.remove('hidden');
+        }
+
+        function closePartyDetailModal() {
+            document.getElementById('partyDetailModal').classList.add('hidden');
+        }
+
         function editParty(index) {
             const p = parties[index];
             document.getElementById('partyIndex').value = index;
             document.getElementById('name').value = p.name;
+            document.getElementById('category').value = p.category || 'Dealer';
             document.getElementById('address').value = p.address;
-            document.getElementById('phone').value = p.phone;
+            document.getElementById('phone').value = p.phone || '';
+            document.getElementById('phone2').value = p.phone2 || '';
             document.getElementById('code').value = p.code;
             document.getElementById('mapLink').value = p.mapLink;
-            document.getElementById('formTitle').innerHTML = '<i class="fa-solid fa-user-pen"></i> পার্টির তথ্য আপডেট';
-            document.getElementById('saveBtn').innerText = 'আপডেট করুন';
+            document.getElementById('notes').value = p.notes || '';
+            document.getElementById('formTitle').innerHTML = '<i class="fa-solid fa-user-pen"></i> Update Party Info';
+            document.getElementById('saveBtn').innerText = 'Update';
             openFormModal();
         }
 
         function deleteParty(index) {
-            if (confirm('আপনি কি নিশ্চিতভাবে এই পার্টি ডিলিট করতে চান?')) {
+            if (confirm('Are you sure you want to delete this party?')) {
                 parties.splice(index, 1);
                 localStorage.setItem('parties', JSON.stringify(parties));
                 renderParties();
-                showToast('পার্টি সফলভাবে ডিলিট করা হয়েছে!', 'error');
+                showToast('Party deleted successfully!', 'error');
+                triggerAutoCloudBackup();
             }
         }
 
         function resetForm() {
             document.getElementById('partyForm').reset();
             document.getElementById('partyIndex').value = '';
-            document.getElementById('formTitle').innerHTML = '<i class="fa-solid fa-user-plus"></i> নতুন পার্টি যোগ করুন';
-            document.getElementById('saveBtn').innerText = 'সংরক্ষণ করুন';
+            document.getElementById('formTitle').innerHTML = '<i class="fa-solid fa-user-plus"></i> Add New Party';
+            document.getElementById('saveBtn').innerText = 'Save';
         }
 
         async function pasteFromClipboard() {
             try {
                 const text = await navigator.clipboard.readText();
                 document.getElementById('mapLink').value = text;
-                showToast('ক্লিপবোর্ড থেকে পেস্ট করা হয়েছে', 'success');
+                showToast('Pasted from clipboard', 'success');
             } catch (err) {
-                alert('ক্লিপবোর্ড থেকে পেস্ট করা সম্ভব হয়নি!');
+                alert('Failed to paste from clipboard!');
             }
         }
 
         function shareParty(index) {
             const p = parties[index];
-            const text = `পার্টির নাম: ${p.name}\nকোড: ${p.code || 'নেই'}\nঠিকানা: ${p.address || 'নেই'}\nফোন: ${p.phone || 'নেই'}\nলোকেশন: ${p.mapLink || 'নেই'}`;
+            const text = `Party Name: ${p.name}\nCategory: ${p.category || 'N/A'}\nCode: ${p.code || 'N/A'}\nAddress: ${p.address || 'N/A'}\nPhone 1: ${p.phone || 'N/A'}\nPhone 2: ${p.phone2 || 'N/A'}\nNotes: ${p.notes || 'N/A'}\nLocation/Map: ${p.mapLink || 'N/A'}`;
             if (navigator.share) {
                 navigator.share({ title: p.name, text: text }).catch(() => {});
             } else {
                 navigator.clipboard.writeText(text);
-                showToast('পার্টির তথ্য কপি করা হয়েছে!', 'success');
+                showToast('Party details copied to clipboard!', 'success');
             }
         }
 
+        function printReport() { window.print(); }
+
+        function openGalleryModal() {
+            const galleryContainer = document.getElementById('galleryGridContainer');
+            galleryContainer.innerHTML = '';
+            const partiesWithImage = parties.filter(p => p.image && p.image.trim() !== "");
+
+            if (partiesWithImage.length === 0) {
+                galleryContainer.innerHTML = `
+                    <div class="col-span-full py-8 text-center text-slate-400 dark:text-slate-500">
+                        <i class="fa-regular fa-image text-3xl mb-2"></i>
+                        <p class="text-xs">No party images found</p>
+                    </div>`;
+            } else {
+                partiesWithImage.forEach(p => {
+                    galleryContainer.innerHTML += `
+                        <div class="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-2 flex flex-col items-center space-y-1.5 shadow-2xs">
+                            <img src="${p.image}" onclick="openImageModal('${p.image}')" class="w-full h-28 object-cover rounded-xl cursor-pointer hover:opacity-90 transition">
+                            <span class="text-xs font-bold text-slate-700 dark:text-slate-200 truncate w-full text-center">${p.name}</span>
+                        </div>`;
+                });
+            }
+            document.getElementById('galleryModal').classList.remove('hidden');
+        }
+
+        function closeGalleryModal() { document.getElementById('galleryModal').classList.add('hidden'); }
         function openImageModal(imgSrc) {
             document.getElementById('modalImageElement').src = imgSrc;
             document.getElementById('imageModal').classList.remove('hidden');
         }
-
-        function closeImageModal() {
-            document.getElementById('imageModal').classList.add('hidden');
-        }
+        function closeImageModal() { document.getElementById('imageModal').classList.add('hidden'); }
 
         function exportData() {
             const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(parties));
@@ -345,7 +738,7 @@
             dlAnchorElem.setAttribute("href", dataStr);
             dlAnchorElem.setAttribute("download", "party_directory_backup.json");
             dlAnchorElem.click();
-            showToast('ডেটা সফলভাবে এক্সপোর্ট হয়েছে!', 'success');
+            showToast('Data exported successfully!', 'success');
         }
 
         function importData(event) {
@@ -357,12 +750,52 @@
                     parties = JSON.parse(e.target.result);
                     localStorage.setItem('parties', JSON.stringify(parties));
                     renderParties();
-                    showToast('সফলভাবে ডাটা ইমপোর্ট করা হয়েছে!', 'success');
+                    showToast('Data imported successfully!', 'success');
+                    triggerAutoCloudBackup();
                 } catch (err) {
-                    alert('ভুল ফাইল ফরম্যাট!');
+                    alert('Invalid file format!');
                 }
             };
             reader.readAsText(file);
+        }
+
+        let tokenClient;
+        let accessToken = localStorage.getItem('gdrive_token');
+
+        function handleGoogleDriveAuth() {
+            tokenClient = google.accounts.oauth2.initTokenClient({
+                client_id: 'YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com',
+                scope: 'https://www.googleapis.com/auth/drive.file',
+                callback: (response) => {
+                    if (response.access_token) {
+                        accessToken = response.access_token;
+                        localStorage.setItem('gdrive_token', accessToken);
+                        document.getElementById('driveStatusText').innerText = 'Synced';
+                        showToast('Google Drive connected successfully!', 'success');
+                        triggerAutoCloudBackup();
+                    }
+                },
+            });
+            tokenClient.requestAccessToken({prompt: ''});
+        }
+
+        function triggerAutoCloudBackup() {
+            if (!accessToken) return;
+            const fileContent = JSON.stringify(parties);
+            const file = new Blob([fileContent], {type: 'application/json'});
+            const metadata = { name: 'party_directory_auto_backup.json', mimeType: 'application/json' };
+
+            const form = new FormData();
+            form.append('metadata', new Blob([JSON.stringify(metadata)], {type: 'application/json'}));
+            form.append('file', file);
+
+            fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
+                method: 'POST',
+                headers: new Headers({ 'Authorization': 'Bearer ' + accessToken }),
+                body: form
+            }).then(res => {
+                if(res.ok) console.log('Google Drive Auto Backup Successful');
+            }).catch(err => console.log('Cloud backup error:', err));
         }
 
         function showToast(message, type = 'success') {
@@ -371,16 +804,10 @@
             const toastIcon = document.getElementById('toastIcon');
             
             toastMessage.innerText = message;
-            if(type === 'success') {
-                toastIcon.className = "fa-solid fa-circle-check text-emerald-400 text-base";
-            } else {
-                toastIcon.className = "fa-solid fa-circle-exclamation text-rose-400 text-base";
-            }
+            toastIcon.className = type === 'success' ? "fa-solid fa-circle-check text-emerald-400 text-base" : "fa-solid fa-circle-exclamation text-rose-400 text-base";
 
             toast.classList.remove('translate-y-20', 'opacity-0');
-            setTimeout(() => {
-                toast.classList.add('translate-y-20', 'opacity-0');
-            }, 3000);
+            setTimeout(() => { toast.classList.add('translate-y-20', 'opacity-0'); }, 3000);
         }
 
         renderParties();
