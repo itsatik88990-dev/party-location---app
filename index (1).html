@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>পার্টি ম্যানেজমেন্ট প্রো</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <!-- FontAwesome Icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <!-- Google Fonts Hind Siliguri -->
+    <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Hind Siliguri', sans-serif; -webkit-tap-highlight-color: transparent; }
+        ::-webkit-scrollbar { width: 4px; height: 4px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+    </style>
+</head>
+<body class="bg-slate-100 text-slate-800 antialiased pb-20 sm:pb-8">
+
+    <!-- মোবাইল ফ্রেন্ডলি স্টিকি হেডার -->
+    <header class="bg-indigo-600 text-white shadow-md sticky top-0 z-40">
+        <div class="max-w-4xl mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center space-x-2.5">
+                <div class="bg-white/10 p-2 rounded-xl">
+                    <i class="fa-solid fa-users-rectangle text-xl text-amber-300"></i>
+                </div>
+                <div>
+                    <h1 class="text-base sm:text-lg font-bold leading-tight">পার্টি ম্যানেজমেন্ট</h1>
+                    <p class="text-[10px] sm:text-xs text-indigo-200">মোবাইল ফ্রেন্ডলি ডিরেক্টরি</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-1.5">
+                <button onclick="exportData()" title="এক্সপোর্ট" class="bg-white/10 hover:bg-white/20 p-2 rounded-xl text-xs font-medium transition active:scale-95 cursor-pointer">
+                    <i class="fa-solid fa-download"></i>
+                </button>
+                <label title="ইমপোর্ট" class="bg-white/10 hover:bg-white/20 p-2 rounded-xl text-xs font-medium transition active:scale-95 cursor-pointer inline-block">
+                    <i class="fa-solid fa-upload"></i>
+                    <input type="file" id="importFile" class="hidden" accept=".json" onchange="importData(event)">
+                </label>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-4xl mx-auto px-3 sm:px-4 py-4 space-y-4">
+        
+        <!-- ড্যাশবোর্ড ওভারভিউ কার্ড -->
+        <div class="grid grid-cols-2 gap-3">
+            <div class="bg-white p-3.5 rounded-2xl shadow-xs border border-slate-200/80 flex items-center justify-between">
+                <div>
+                    <p class="text-[11px] font-semibold text-slate-400 uppercase">মোট পার্টি</p>
+                    <h3 id="totalPartiesCount" class="text-xl font-bold text-slate-700">০</h3>
+                </div>
+                <div class="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center">
+                    <i class="fa-solid fa-user-group text-sm"></i>
+                </div>
+            </div>
+            <div class="bg-white p-3.5 rounded-2xl shadow-xs border border-slate-200/80 flex items-center justify-between">
+                <div>
+                    <p class="text-[11px] font-semibold text-slate-400 uppercase">ছবিযুক্ত</p>
+                    <h3 id="totalImagesCount" class="text-xl font-bold text-slate-700">০</h3>
+                </div>
+                <div class="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center">
+                    <i class="fa-solid fa-image text-sm"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- নতুন পার্টি যোগ করার টগল বাটন -->
+        <button onclick="openFormModal()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-4 rounded-2xl shadow-sm transition active:scale-98 cursor-pointer flex items-center justify-center gap-2 text-sm">
+            <i class="fa-solid fa-user-plus text-amber-300 text-base"></i> নতুন পার্টি যোগ করুন
+        </button>
+
+        <!-- ফর্ম মডাল (লুকানো থাকবে, বাটনে ক্লিক করলে আসবে) -->
+        <div id="formModal" class="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 hidden flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+            <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-lg overflow-hidden my-auto transform transition-all">
+                <div class="bg-slate-50 px-4 py-3.5 border-b border-slate-100 flex justify-between items-center">
+                    <h2 id="formTitle" class="text-indigo-600 font-bold text-sm sm:text-base flex items-center gap-2">
+                        <i class="fa-solid fa-user-plus"></i> নতুন পার্টি যোগ করুন
+                    </h2>
+                    <button type="button" onclick="closeFormModal()" class="text-slate-400 hover:text-slate-600 w-8 h-8 rounded-full flex items-center justify-center transition cursor-pointer">
+                        <i class="fa-solid fa-xmark text-base"></i>
+                    </button>
+                </div>
+                
+                <form id="partyForm" onsubmit="saveParty(event)" class="p-4 space-y-3.5 max-h-[80vh] overflow-y-auto">
+                    <input type="hidden" id="partyIndex">
+                    
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">নাম <span class="text-rose-500">*</span></label>
+                            <input type="text" id="name" required placeholder="পার্টির নাম লিখুন" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">ঠিকানা (Address)</label>
+                            <input type="text" id="address" placeholder="এلاকা বা ঠিকানা" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">ফোন নম্বর</label>
+                            <input type="tel" id="phone" placeholder="০১৭xxxxxxxx" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">পার্টি কোড</label>
+                            <input type="text" id="code" placeholder="কোড নম্বর" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">গুগল ম্যাপ লিংক বা লোকেশন</label>
+                        <div class="flex gap-2">
+                            <input type="text" id="mapLink" placeholder="ম্যাপের লিংক পেস্ট করুন" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
+                            <button type="button" onclick="pasteFromClipboard()" class="bg-slate-200 hover:bg-slate-300 px-3.5 py-2.5 rounded-xl text-slate-700 text-xs font-medium cursor-pointer transition shrink-0"><i class="fa-regular fa-clipboard mr-1"></i>পেস্ট</button>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">পার্টির ছবি</label>
+                        <input type="file" id="partyImage" accept="image/*" class="w-full border border-slate-200 rounded-xl px-3 py-2 bg-slate-50 text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 cursor-pointer">
+                    </div>
+
+                    <div class="flex gap-2.5 pt-2">
+                        <button type="submit" id="saveBtn" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2.5 px-4 rounded-xl text-sm shadow-xs transition active:scale-98 cursor-pointer">সংরক্ষণ করুন</button>
+                        <button type="button" onclick="resetForm()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 font-medium py-2.5 px-4 rounded-xl text-sm transition active:scale-98 cursor-pointer">রিসেট</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- সার্চ বক্স -->
+        <div class="sticky top-[58px] z-30 bg-slate-100/90 backdrop-blur-md py-1">
+            <div class="bg-white rounded-2xl shadow-xs border border-slate-200/80 flex items-center px-3.5 py-2">
+                <i class="fa-solid fa-magnifying-glass text-slate-400 mr-2.5 text-sm"></i>
+                <input type="text" id="searchInput" onkeyup="renderParties()" placeholder="নাম, নম্বর বা কোড দিয়ে খুঁজুন..." class="w-full bg-transparent text-sm focus:outline-none text-slate-700 placeholder-slate-400">
+            </div>
+        </div>
+
+        <!-- পার্টি তালিকা কার্ড লেআউট -->
+        <div class="space-y-3" id="partyListContainer">
+            <!-- ডাইনামিক কার্ডগুলো এখানে রেন্ডার হবে -->
+        </div>
+
+    </main>
+
+    <!-- ফুলস্ক্রিন ইমেজ প্রিভিউ মডাল -->
+    <div id="imageModal" class="fixed inset-0 bg-black/80 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4" onclick="closeImageModal()">
+        <div class="relative max-w-md w-full bg-white rounded-2xl p-2 shadow-2xl overflow-hidden" onclick="event.stopPropagation()">
+            <button onclick="closeImageModal()" class="absolute top-3 right-3 bg-black/60 text-white w-8 h-8 rounded-full flex items-center justify-center hover:bg-black transition cursor-pointer z-10"><i class="fa-solid fa-xmark"></i></button>
+            <img id="modalImageElement" src="" class="w-full h-auto max-h-[75vh] object-contain rounded-xl">
+        </div>
+    </div>
+
+    <!-- টোস্ট নোটিফিকেশন -->
+    <div id="toast" class="fixed bottom-4 left-4 right-4 sm:left-auto sm:right-4 sm:max-w-xs z-50 transform translate-y-20 opacity-0 transition-all duration-300 bg-slate-900 text-white px-4 py-3 rounded-2xl shadow-xl text-xs sm:text-sm flex items-center gap-2.5">
+        <i id="toastIcon" class="fa-solid fa-circle-check text-emerald-400 text-base"></i>
+        <span id="toastMessage" class="flex-1">সফলভাবে সম্পন্ন হয়েছে!</span>
+    </div>
+
+    <!-- স্ক্রিপ্ট লজিক -->
+    <script>
+        let parties = JSON.parse(localStorage.getItem('parties')) || [];
+
+        function openFormModal() {
+            document.getElementById('formModal').classList.remove('hidden');
+        }
+
+        function closeFormModal() {
+            document.getElementById('formModal').classList.add('hidden');
+            resetForm();
+        }
+
+        function saveParty(e) {
+            e.preventDefault();
+            const index = document.getElementById('partyIndex').value;
+            const name = document.getElementById('name').value.trim();
+            const address = document.getElementById('address').value.trim();
+            const phone = document.getElementById('phone').value.trim();
+            const code = document.getElementById('code').value.trim();
+            const mapLink = document.getElementById('mapLink').value.trim();
+            const imageFile = document.getElementById('partyImage').files[0];
+
+            if (imageFile) {
+                const reader = new FileReader();
+                reader.onload = function(uploadEvent) {
+                    savePartyData(index, name, address, phone, code, mapLink, uploadEvent.target.result);
+                };
+                reader.readAsDataURL(imageFile);
+            } else {
+                let existingImage = index !== "" ? (parties[index].image || "") : "";
+                savePartyData(index, name, address, phone, code, mapLink, existingImage);
+            }
+        }
+
+        function savePartyData(index, name, address, phone, code, mapLink, image) {
+            const partyObj = { name, address, phone, code, mapLink, image };
+
+            if (index === "") {
+                parties.unshift(partyObj);
+                showToast('নতুন পার্টি সফলভাবে যোগ করা হয়েছে!', 'success');
+            } else {
+                parties[index] = partyObj;
+                showToast('পার্টির তথ্য আপডেট করা হয়েছে!', 'success');
+            }
+
+            localStorage.setItem('parties', JSON.stringify(parties));
+            closeFormModal();
+            renderParties();
+        }
+
+        function renderParties() {
+            const searchQuery = document.getElementById('searchInput').value.toLowerCase();
+            const container = document.getElementById('partyListContainer');
+            container.innerHTML = '';
+
+            document.getElementById('totalPartiesCount').innerText = parties.length;
+            const imgCount = parties.filter(p => p.image && p.image.trim() !== "").length;
+            document.getElementById('totalImagesCount').innerText = imgCount;
+
+            const filteredParties = parties.filter((p) => {
+                return (p.name && p.name.toLowerCase().includes(searchQuery)) ||
+                       (p.address && p.address.toLowerCase().includes(searchQuery)) ||
+                       (p.phone && p.phone.includes(searchQuery)) ||
+                       (p.code && p.code.toLowerCase().includes(searchQuery)) ||
+                       (p.mapLink && p.mapLink.toLowerCase().includes(searchQuery));
+            });
+
+            if (filteredParties.length === 0) {
+                container.innerHTML = `
+                    <div class="bg-white rounded-2xl p-8 text-center text-slate-400 border border-slate-200/80 shadow-xs">
+                        <i class="fa-regular fa-folder-open text-3xl mb-2"></i>
+                        <p class="text-sm">কোনো পার্টির তথ্য পাওয়া যায়নি</p>
+                    </div>`;
+                return;
+            }
+
+            filteredParties.forEach((p) => {
+                const originalIdx = parties.indexOf(p);
+                
+                let imageTag = p.image ? 
+                    `<img src="${p.image}" onclick="openImageModal('${p.image}')" class="w-14 h-14 object-cover rounded-xl border border-slate-200 cursor-pointer shadow-2xs shrink-0" title="ছবি বড় করুন">` : 
+                    `<div class="w-14 h-14 bg-slate-100 rounded-xl flex items-center justify-center text-slate-400 text-xs font-medium border border-slate-200 shrink-0">ছবি নেই</div>`;
+                
+                let mapHtml = p.mapLink ? 
+                    `<a href="${p.mapLink.startsWith('http') ? p.mapLink : 'https://www.google.com/maps/search/' + encodeURIComponent(p.mapLink)}" target="_blank" class="text-rose-600 hover:underline text-xs inline-flex items-center gap-1 bg-rose-50 px-2.5 py-1 rounded-lg border border-rose-100 font-medium"><i class="fa-solid fa-location-dot"></i>ম্যাপ</a>` : '';
+
+                let phoneHtml = p.phone ? 
+                    `<a href="tel:${p.phone}" class="text-indigo-600 hover:underline text-xs inline-flex items-center gap-1 bg-indigo-50 px-2.5 py-1 rounded-lg border border-indigo-100 font-medium"><i class="fa-solid fa-phone"></i>${p.phone}</a>` : '';
+
+                let card = `
+                    <div class="bg-white rounded-2xl p-4 shadow-xs border border-slate-200/80 space-y-3 transition hover:shadow-md">
+                        <div class="flex items-start justify-between gap-3">
+                            <div class="flex items-center gap-3">
+                                ${imageTag}
+                                <div>
+                                    <div class="flex items-center gap-2">
+                                        <h3 class="font-bold text-slate-800 text-sm sm:text-base">${p.name}</h3>
+                                        ${p.code ? `<span class="bg-slate-100 text-slate-600 text-[10px] font-bold px-2 py-0.5 rounded-md border border-slate-200">কোড: ${p.code}</span>` : ''}
+                                    </div>
+                                    <p class="text-xs text-slate-500 mt-0.5"><i class="fa-solid fa-location-dot text-slate-400 mr-1"></i>${p.address || 'ঠিকানা দেওয়া হয়নি'}</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flex flex-wrap items-center gap-2 pt-1 border-t border-slate-100">
+                            ${phoneHtml}
+                            ${mapHtml}
+                        </div>
+
+                        <div class="flex items-center justify-end gap-1.5 pt-2 border-t border-slate-100">
+                            <button onclick="shareParty(${originalIdx})" class="bg-emerald-50 text-emerald-600 hover:bg-emerald-600 hover:text-white px-3 py-1.5 rounded-xl text-xs font-medium transition cursor-pointer flex items-center gap-1"><i class="fa-solid fa-share-nodes"></i> শেয়ার</button>
+                            <button onclick="editParty(${originalIdx})" class="bg-indigo-50 text-indigo-600 hover:bg-indigo-600 hover:text-white px-3 py-1.5 rounded-xl text-xs font-medium transition cursor-pointer flex items-center gap-1"><i class="fa-solid fa-pen-to-square"></i> এডিট</button>
+                            <button onclick="deleteParty(${originalIdx})" class="bg-rose-50 text-rose-600 hover:bg-rose-600 hover:text-white px-3 py-1.5 rounded-xl text-xs font-medium transition cursor-pointer flex items-center gap-1"><i class="fa-solid fa-trash-can"></i> ডিলিট</button>
+                        </div>
+                    </div>
+                `;
+                container.innerHTML += card;
+            });
+        }
+
+        function editParty(index) {
+            const p = parties[index];
+            document.getElementById('partyIndex').value = index;
+            document.getElementById('name').value = p.name;
+            document.getElementById('address').value = p.address;
+            document.getElementById('phone').value = p.phone;
+            document.getElementById('code').value = p.code;
+            document.getElementById('mapLink').value = p.mapLink;
+            document.getElementById('formTitle').innerHTML = '<i class="fa-solid fa-user-pen"></i> পার্টির তথ্য আপডেট';
+            document.getElementById('saveBtn').innerText = 'আপডেট করুন';
+            openFormModal();
+        }
+
+        function deleteParty(index) {
+            if (confirm('আপনি কি নিশ্চিতভাবে এই পার্টি ডিলিট করতে চান?')) {
+                parties.splice(index, 1);
+                localStorage.setItem('parties', JSON.stringify(parties));
+                renderParties();
+                showToast('পার্টি সফলভাবে ডিলিট করা হয়েছে!', 'error');
+            }
+        }
+
+        function resetForm() {
+            document.getElementById('partyForm').reset();
+            document.getElementById('partyIndex').value = '';
+            document.getElementById('formTitle').innerHTML = '<i class="fa-solid fa-user-plus"></i> নতুন পার্টি যোগ করুন';
+            document.getElementById('saveBtn').innerText = 'সংরক্ষণ করুন';
+        }
+
+        async function pasteFromClipboard() {
+            try {
+                const text = await navigator.clipboard.readText();
+                document.getElementById('mapLink').value = text;
+                showToast('ক্লিপবোর্ড থেকে পেস্ট করা হয়েছে', 'success');
+            } catch (err) {
+                alert('ক্লিপবোর্ড থেকে পেস্ট করা সম্ভব হয়নি!');
+            }
+        }
+
+        function shareParty(index) {
+            const p = parties[index];
+            const text = `পার্টির নাম: ${p.name}\nকোড: ${p.code || 'নেই'}\nঠিকানা: ${p.address || 'নেই'}\nফোন: ${p.phone || 'নেই'}\nলোকেশন: ${p.mapLink || 'নেই'}`;
+            if (navigator.share) {
+                navigator.share({ title: p.name, text: text }).catch(() => {});
+            } else {
+                navigator.clipboard.writeText(text);
+                showToast('পার্টির তথ্য কপি করা হয়েছে!', 'success');
+            }
+        }
+
+        function openImageModal(imgSrc) {
+            document.getElementById('modalImageElement').src = imgSrc;
+            document.getElementById('imageModal').classList.remove('hidden');
+        }
+
+        function closeImageModal() {
+            document.getElementById('imageModal').classList.add('hidden');
+        }
+
+        function exportData() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(parties));
+            const dlAnchorElem = document.createElement('a');
+            dlAnchorElem.setAttribute("href", dataStr);
+            dlAnchorElem.setAttribute("download", "party_directory_backup.json");
+            dlAnchorElem.click();
+            showToast('ডেটা সফলভাবে এক্সপোর্ট হয়েছে!', 'success');
+        }
+
+        function importData(event) {
+            const file = event.target.files.item(0);
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    parties = JSON.parse(e.target.result);
+                    localStorage.setItem('parties', JSON.stringify(parties));
+                    renderParties();
+                    showToast('সফলভাবে ডাটা ইমপোর্ট করা হয়েছে!', 'success');
+                } catch (err) {
+                    alert('ভুল ফাইল ফরম্যাট!');
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            const toastMessage = document.getElementById('toastMessage');
+            const toastIcon = document.getElementById('toastIcon');
+            
+            toastMessage.innerText = message;
+            if(type === 'success') {
+                toastIcon.className = "fa-solid fa-circle-check text-emerald-400 text-base";
+            } else {
+                toastIcon.className = "fa-solid fa-circle-exclamation text-rose-400 text-base";
+            }
+
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            setTimeout(() => {
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 3000);
+        }
+
+        renderParties();
+    </script>
+</body>
+</html>
